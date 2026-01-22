@@ -2,18 +2,26 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import pickle
 import numpy as np
+import os
 
 app = Flask(__name__)
 
 # ==============================
+# Base directory
+# ==============================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ==============================
 # Load trained ML model
 # ==============================
-model = pickle.load(open('model/car_price_model.pkl', 'rb'))
+MODEL_PATH = os.path.join(BASE_DIR, 'model', 'car_price_model.pkl')
+model = pickle.load(open(MODEL_PATH, 'rb'))
 
 # ==============================
 # Load CSV for dropdowns
 # ==============================
-car = pd.read_csv('quikr_car.csv')
+CSV_PATH = os.path.join(BASE_DIR, 'quikr_car.csv')
+car = pd.read_csv(CSV_PATH)
 
 # Basic cleaning for dropdowns
 car['company'] = car['company'].astype(str).str.strip()
@@ -21,7 +29,7 @@ car['name'] = car['name'].astype(str).str.strip()
 car['fuel_type'] = car['fuel_type'].astype(str).str.strip()
 car['year'] = pd.to_numeric(car['year'], errors='coerce')
 
-# Remove junk company names (like numbers, very short strings)
+# Remove junk company names
 car = car[car['company'].str.len() > 2]
 
 # ==============================
@@ -43,13 +51,10 @@ def index():
     )
 
 # ==============================
-# Dependent dropdown for car models
-# (MATCHES YOUR index.html)
+# Dependent dropdown
 # ==============================
 @app.route('/fetch_models/<company>')
 def fetch_models(company):
-    print(f"DEBUG: fetch_models called with {company}")
-
     company = company.strip()
 
     models = sorted(
@@ -58,8 +63,6 @@ def fetch_models(company):
         .unique()
         .tolist()
     )
-
-    print(f"DEBUG: models found = {len(models)}")
 
     return jsonify(models)
 
@@ -83,7 +86,6 @@ def predict():
     except:
         return "Invalid numeric input"
 
-    # Must match model training features
     X = pd.DataFrame(
         [[car_model, company, fuel_type, year, driven]],
         columns=['name', 'company', 'fuel_type', 'year', 'kms_driven']
@@ -94,7 +96,8 @@ def predict():
     return str(round(prediction, 2))
 
 # ==============================
-# Run app
+# Run app (RENDER READY)
 # ==============================
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

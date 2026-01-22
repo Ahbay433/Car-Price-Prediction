@@ -1,4 +1,18 @@
-.venv/
+# Python
 __pycache__/
 *.pyc
-model/
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
